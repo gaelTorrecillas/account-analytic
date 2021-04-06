@@ -1,0 +1,26 @@
+<odoo>
+    <record id="view_account_costing_product_category" model="ir.ui.view">
+        <field name="name">account.costing.product.category</field>
+        <field name="model">product.category</field>
+        <field name="inherit_id" ref="account.view_category_property_form" />
+        <field name="arch" type="xml">
+            <group name="account_property" position="after">
+                <group name="product_costing" string="Costing" colspan="4" col="4">
+                    <field
+                        name="property_cost_wip_journal_id"
+                        attrs="{'required':['|',('property_cost_consume_account_id','!=',False),'|',('property_cost_wip_account_id','!=',False),('property_cost_variance_account_id','!=',False)]}"
+                    />
+                    <field
+                        name="property_cost_consume_account_id"
+                        attrs="{'required':[('property_cost_wip_journal_id','!=',False)]}"
+                    />
+                    <field
+                        name="property_cost_wip_account_id"
+                        attrs="{'required':[('property_cost_wip_journal_id','!=',False)]}"
+                    />
+                    <field name="property_cost_variance_account_id" />
+                </group>
+            </group>
+        </field>
+    </record>
+</odoo>
