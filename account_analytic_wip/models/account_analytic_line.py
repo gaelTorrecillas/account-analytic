@@ -29,35 +29,42 @@ class AnalyticLine(models.Model):
     activity_cost_id = fields.Many2one(
         "activity.cost.rule", "Cost Rule Applied", ondelete="restrict"
     )
+    # Quantity and Amount for Child Analytic Items
+    # Uses differernt fields to avoid doubling when aggregating data
+    unit_child = fields.Float(
+        "Breakdown Quantity",
+        help="Quantity set on child Analytic Items, rolled up to the parent",
+    )
+    amount_child = fields.Monetary(
+        "Breakdown Amount",
+        compute="_compute_amount_child",
+        store=True,
+        help="Amount on child Analytic Items, rolled up to the parent",
+    )
 
-    @api.onchange("product_id", "product_uom_id", "unit_amount", "currency_id")
-    def on_change_unit_amount(self):
-        """ Do not set Amount on cost parent Analytic Items """
-        super().on_change_unit_amount()
-        if self.child_ids:
-            self.amount = 0
+    @api.depends("unit_child", "product_id")
+    def _compute_amount_child(self):
+        """Compute amount for child Analytic Items"""
+        for item in self.filtered("child_ids"):
+            price_child = item.product_id.price_compute(
+                "standard_price", uom=item.product_id.product_uom_id
+            )[item.product_id.id]
+            self.amount_child = price_child * item.unit_child * -1 or 0.0
 
-    def _prepare_activity_cost_data(self, cost_type):
+    def _prepare_activity_cost_data(self, cost_type, qty):
         """
         Return a dict with the values to create
         a new Analytic item for a Cost Type.
         """
-        self.ensure_one()
-        values = {
+        return {
             "name": "{} / {}".format(
                 self.name, cost_type.product_id.display_name or cost_type.name
             ),
+            "parent_id": self.id,
             "activity_cost_id": cost_type.id,
             "product_id": cost_type.product_id.id,
-            "unit_amount": self.unit_amount * cost_type.factor,
+            "unit_child": qty,
         }
-        # Remove the link the the Project Task,
-        # otherwise the cost lines would wrongly show as Timesheet
-        if hasattr(self, "project_id"):
-            values["project_id"] = None
-        if hasattr(self, "task_id"):
-            values["task_id"] = None
-        return values
 
     def _set_tracking_item(self):
         """
@@ -85,18 +92,11 @@ class AnalyticLine(models.Model):
         to ensure all other fields are preserved on the new Item.
         """
         for analytic_parent in self.filtered("product_id.activity_cost_ids"):
-            cost_ids = analytic_parent.product_id.activity_cost_ids
-            if cost_ids:
-                # Parent Cost Type amount must be zero
-                # to avoid duplication with child cost type amounts
-                analytic_parent.amount = 0
-            for cost_product in cost_ids:
+            for cost_product in analytic_parent.product_id.activity_cost_ids:
                 cost_vals = analytic_parent._prepare_activity_cost_data(
-                    cost_type=cost_product
+                    cost_type=cost_product, qty=analytic_parent.unit_amount
                 )
-                cost_vals["parent_id"] = analytic_parent.id
-                analytic_child = analytic_parent.copy(cost_vals)
-                analytic_child.on_change_unit_amount()
+                analytic_parent.copy(cost_vals)
 
     @api.model
     def create(self, vals):
@@ -116,5 +116,4 @@ class AnalyticLine(models.Model):
                     cost_type=analytic_child.activity_cost_id
                 )
                 analytic_child.write(cost_vals)
-                analytic_child.on_change_unit_amount()
         return res

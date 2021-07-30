@@ -127,7 +127,6 @@ class AnalyticTrackingItem(models.Model):
 
     @api.depends(
         "analytic_line_ids.amount",
-        "analytic_line_ids.unit_amount",
         "parent_id.analytic_line_ids.amount",
         "planned_amount",
         "accounted_amount",
@@ -143,7 +142,9 @@ class AnalyticTrackingItem(models.Model):
                 product_actuals = all_actuals.filtered(
                     lambda x: x.product_id == item.product_id
                 )
-                item.actual_amount = -sum(product_actuals.mapped("amount")) or 0.0
+                item.actual_amount = (
+                    -sum(x.amount + x.amount_child for x in product_actuals) or 0.0
+                )
 
             item.pending_amount = item.actual_amount - item.accounted_amount
             item.wip_actual_amount = min(item.actual_amount, item.planned_amount)

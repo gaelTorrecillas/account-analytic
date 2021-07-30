@@ -18,6 +18,7 @@
                     string="Activity Costs"
                     groups="base.group_no_one"
                 >
+                    <field name="amount_child" />
                     <field
                         name="parent_id"
                         readonly="True"

@@ -74,7 +74,9 @@ class AnalyticTrackedItem(models.AbstractModel):
                 tracking_item = item.analytic_tracking_item_id
                 for subitem in tracking_item | tracking_item.child_ids:
                     qty = planned_qty if subitem.to_calculate else 0.0
-                    unit_cost = subitem.product_id.standard_price
+                    unit_cost = subitem.product_id.price_compute(
+                        "standard_price", uom=subitem.product_id.product_uom_id
+                    )[subitem.product_id.id]
                     subitem.planned_amount = qty * unit_cost
 
     @api.model
