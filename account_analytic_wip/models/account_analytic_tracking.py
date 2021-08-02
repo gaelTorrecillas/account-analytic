@@ -27,6 +27,7 @@ class AnalyticTrackingItem(models.Model):
     product_id = fields.Many2one(
         "product.product", string="Cost Product", ondelete="restrict"
     )
+    activity_cost_id = fields.Many2one("activity.cost.rule", "Activity Cost Rule")
 
     # Related calculated data
     company_id = fields.Many2one(
@@ -71,6 +72,7 @@ class AnalyticTrackingItem(models.Model):
     )
 
     # Planned Amount
+    planned_qty = fields.Float()
     planned_amount = fields.Float()
 
     # Actual Amounts
@@ -123,7 +125,9 @@ class AnalyticTrackingItem(models.Model):
     @api.depends("state", "child_ids")
     def _compute_to_calculate(self):
         for item in self:
-            item.to_calculate = item.state != "cancel" and not item.child_ids
+            item.to_calculate = (
+                item.state != "cancel" and not item.child_ids and item.product_id
+            )
 
     @api.depends(
         "analytic_line_ids.amount",
@@ -143,7 +147,7 @@ class AnalyticTrackingItem(models.Model):
                     lambda x: x.product_id == item.product_id
                 )
                 item.actual_amount = (
-                    -sum(x.amount + x.amount_child for x in product_actuals) or 0.0
+                    -sum(product_actuals.mapped("amount_abcost")) or 0.0
                 )
 
             item.pending_amount = item.actual_amount - item.accounted_amount
@@ -283,3 +287,39 @@ class AnalyticTrackingItem(models.Model):
         # TODO: what to do if there are JEs done?
         all_tracking = self | self.child_ids
         all_tracking.write({"state": "cancel"})
+
+    def _populate_abcost_tracking_item(self):
+        for tracking in self.filtered("to_calculate"):
+            cost_rules = tracking.product_id.activity_cost_ids
+            # Calculate Planned Amount if no ABC an only qty provided
+            # or when a ABC tarcking (sub)item is created
+            if not tracking.planned_amount and not cost_rules:
+                factor = tracking.activity_cost_id.factor or 1.0
+                unit_cost = tracking.product_id.price_compute(
+                    "standard_price", uom=tracking.product_id.uom_id
+                )[tracking.product_id.id]
+                qty = factor * (tracking.planned_qty or tracking.parent_id.planned_qty)
+                tracking.planned_amount = qty * unit_cost
+            # Generate ABC (sub)tracking items
+            if cost_rules and not tracking.child_ids:
+                for cost_rule in cost_rules:
+                    vals = {
+                        "parent_id": tracking.id,
+                        "product_id": cost_rule.product_id.id,
+                        "activity_cost_id": cost_rule.id,
+                        "planned_qty": 0.0,
+                    }
+                    tracking.copy(vals)
+
+    @api.model
+    def create(self, vals):
+        new = super().create(vals)
+        new._populate_abcost_tracking_item()
+        return new
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Write on planned_qty to update the planned amounts
+        if vals.get("planned_qty"):
+            self._populate_abcost_tracking_item()
+        return res

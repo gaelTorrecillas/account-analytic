@@ -15,7 +15,9 @@ class AccountAnalytic(models.Model):
     _inherit = "account.analytic.account"
 
     analytic_tracking_item_ids = fields.One2many(
-        "account.analytic.tracking.item", "analytic_id", string="Tracking Items"
+        "account.analytic.tracking.item",
+        "analytic_id",
+        string="Tracking Items",
     )
 
     @api.model
