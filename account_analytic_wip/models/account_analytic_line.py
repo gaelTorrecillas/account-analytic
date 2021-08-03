@@ -15,15 +15,25 @@ class AnalyticLine(models.Model):
         "account.analytic.tracking.item", string="Tracking Item"
     )
 
-    def _set_tracking_item(self):
+    def _prepare_tracking_item_values(self):
+        return {
+            "analytic_id": self.analytic_id.id,
+            "product_id": self.product_id.id,
+        }
+
+    def populate_tracking_items(self):
         """
         When creating a child Analytic Item,
         find the correct matching child Tracking Item
         """
-        for item in self:
+        TrackingItem = self.env["account.analytic.tracking.item"]
+        missing_tracking = self.filtered(lambda x: not x.analytic_tracking_item_id)
+        for item in missing_tracking:
             if not item.parent_id:
-                pass  # TODO: automatically assign a Tracking Item!
-            else:
+                vals = item._prepare_tracking_item_values()
+                tracking_item = TrackingItem.create(vals)
+                item.analytic_tracking_item_id = tracking_item
+            if item.parent_id:
                 tracking_childs = item.parent_id.analytic_tracking_item_id.child_ids
                 tracking_item = tracking_childs.filtered(
                     lambda x: x.product_id == item.product_id
@@ -38,5 +48,5 @@ class AnalyticLine(models.Model):
     @api.model
     def create(self, vals):
         new = super().create(vals)
-        new._set_tracking_item()
+        new.populate_tracking_items()
         return new
