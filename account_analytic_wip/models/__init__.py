@@ -5,5 +5,3 @@ from . import account_move
 from . import account_analytic
 from . import account_analytic_line
 from . import account_analytic_tracking
-from . import product_category
-from . import product_template

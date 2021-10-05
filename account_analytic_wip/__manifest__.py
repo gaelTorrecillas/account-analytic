@@ -13,7 +13,6 @@
     "data": [
         "security/ir.model.access.csv",
         "data/ir_cron_data.xml",
-        "views/product_category.xml",
         "views/account_move.xml",
         "views/account_analytic_line.xml",
         "views/account_analytic_tracking.xml",
