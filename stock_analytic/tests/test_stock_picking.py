@@ -13,8 +13,14 @@ from odoo.tests.common import TransactionCase
 class TestStockPicking(TransactionCase):
     def setUp(self):
         super(TestStockPicking, self).setUp()
-
-        self.product = self.env.ref("product.product_product_4")
+        self.product = self.env["product.product"].create(
+            {
+                "name": "Test Product",
+                "type": "product",
+                "standard_price": 1.0,
+            }
+        )
+        self.product_2 = self.env.ref("product.product_product_5")
         self.product_categ = self.env.ref("product.product_category_5")
         self.valuation_account = self.env["account.account"].create(
             {
@@ -109,23 +115,12 @@ class TestStockPicking(TransactionCase):
         return picking
 
     def __update_qty_on_hand_product(self, product, new_qty):
-        qty_wizard = self.env["stock.change.product.qty"].create(
-            {
-                "product_id": product.id,
-                "product_tmpl_id": product.product_tmpl_id.id,
-                "new_quantity": new_qty,
-            }
+        self.env["stock.quant"]._update_available_quantity(
+            product, self.location, new_qty
         )
-        qty_wizard.change_product_qty()
 
     def _confirm_picking_no_error(self, picking):
         picking.action_confirm()
-        self.assertEqual(picking.state, "confirmed")
-
-    def _force_assign_out_no_error(self, picking):
-        self.assertEqual(picking.move_lines.reserved_availability, 0)
-        picking.action_assign()
-        self.assertEqual(picking.move_lines.reserved_availability, 1)
         self.assertEqual(picking.state, "assigned")
 
     def _picking_done_no_error(self, picking):
@@ -138,7 +133,7 @@ class TestStockPicking(TransactionCase):
             ["ref", "=", "{} - {}".format(picking.name, picking.product_id.name)]
         ]
         acc_moves = self.env["account.move"].search(criteria1)
-        self.assertGreater(len(acc_moves), 0)
+        self.assertTrue(len(acc_moves) > 0)
 
     def _check_analytic_account_no_error(self, picking):
         move = picking.move_lines[0]
@@ -180,7 +175,6 @@ class TestStockPicking(TransactionCase):
         )
         self.__update_qty_on_hand_product(self.product, 1)
         self._confirm_picking_no_error(picking)
-        self._force_assign_out_no_error(picking)
         self._picking_done_no_error(picking)
         self._check_account_move_no_error(picking)
         self._check_analytic_account_no_error(picking)
@@ -193,7 +187,6 @@ class TestStockPicking(TransactionCase):
         )
         self.__update_qty_on_hand_product(self.product, 1)
         self._confirm_picking_no_error(picking)
-        self._force_assign_out_no_error(picking)
         self._picking_done_no_error(picking)
         self._check_account_move_no_error(picking)
         self._check_no_analytic_account(picking)
@@ -206,7 +199,36 @@ class TestStockPicking(TransactionCase):
             self.analytic_account,
             [self.analytic_tag_1.id | self.analytic_tag_2.id],
         )
+        self.__update_qty_on_hand_product(self.product, 1)
         self._confirm_picking_no_error(picking)
         self._picking_done_no_error(picking)
         self._check_account_move_no_error(picking)
         self._check_analytic_account_no_error(picking)
+
+    def test_picking_add_extra_move_line(self):
+        picking = self._create_picking(
+            self.location,
+            self.dest_location,
+            self.outgoing_picking_type,
+            self.analytic_account,
+            [self.analytic_tag_1.id | self.analytic_tag_2.id],
+        )
+        move_before = picking.move_lines
+
+        self.env["stock.move.line"].create(
+            {
+                "product_id": self.product_2.id,
+                "location_id": self.location.id,
+                "location_dest_id": self.dest_location.id,
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "product_uom_id": self.product_2.uom_id.id,
+                "product_uom_qty": 1.0,
+                "analytic_account_id": self.analytic_account.id,
+                "company_id": self.env.company.id,
+                "picking_id": picking.id,
+            }
+        )
+
+        move_after = picking.move_lines - move_before
+
+        self.assertEqual(self.analytic_account, move_after.analytic_account_id)
