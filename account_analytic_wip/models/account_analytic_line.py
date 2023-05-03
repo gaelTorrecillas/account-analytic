@@ -21,10 +21,10 @@ class AnalyticLine(models.Model):
     def _get_tracking_item(self):
         self.ensure_one()
         all_tracking = self.account_id.analytic_tracking_item_ids
-        tracking = all_tracking.filtered(
-            lambda x: x.product_id == self.product_id
-            or (not self.product_id and not x.product_id)
-        )
+        if self.product_id:
+            tracking = all_tracking.search([("product_id", "=", self.product_id.id), ("analytic_id", "=", self.account_id.id)])
+        else:
+            tracking = all_tracking.search([("product_id", "=", False), ("analytic_id", "=", self.account_id.id)])
         return tracking
 
     def _get_set_tracking_item(self):
