@@ -106,8 +106,9 @@
                 <field
                     name="wip_actual_amount"
                     string="WIP"
-                    optional="show"
+                    optional="hide"
                     sum="WIP"
+                    invisible="1"
                 />
                 <field
                     name="pending_amount"
