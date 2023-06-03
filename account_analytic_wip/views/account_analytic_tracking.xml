@@ -108,24 +108,23 @@
                     string="WIP"
                     optional="hide"
                     sum="WIP"
-                    invisible="1"
                 />
                 <field
                     name="pending_amount"
                     string="To Post"
-                    optional="show"
+                    optional="hide"
                     sum="To Post"
                 />
                 <field
                     name="accounted_amount"
                     string="Posted"
-                    optional="show"
+                    optional="hide"
                     sum="Posted"
                 />
                 <field
                     name="difference_actual_amount"
                     string="Difference"
-                    optional="show"
+                    optional="hide"
                     sum="Difference"
                 />
                 <field
