@@ -357,12 +357,13 @@ class AnalyticTrackingItem(models.Model):
                         "activity_cost_id": cost_rule.id,
                         "planned_qty": 0.0,
                     }
-                    tracking.copy(vals)
+                    tracking.with_context(skip_populate_abcost=1).copy(vals)
 
     @api.model
     def create(self, vals):
         new = super().create(vals)
-        new._populate_abcost_tracking_item()
+        if not self._context.get('skip_populate_abcost'):
+            new._populate_abcost_tracking_item()
         return new
 
     def write(self, vals):

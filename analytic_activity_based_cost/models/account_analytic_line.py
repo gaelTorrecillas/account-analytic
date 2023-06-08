@@ -96,10 +96,11 @@ class AnalyticLine(models.Model):
         for analytic_parent in self.filtered("product_id.activity_cost_ids"):
             for cost_rule in analytic_parent.product_id.activity_cost_ids:
                 cost_vals = analytic_parent._prepare_activity_cost_data(cost_rule)
-                analytic_parent.copy(cost_vals)
+                analytic_parent.with_context(skip_populate_abcost_line=1).copy(cost_vals)
 
     @api.model
     def create(self, vals):
         res = super().create(vals)
-        res._populate_abcost_lines()
+        if not self._context.get('skip_populate_abcost_line'):
+            res._populate_abcost_lines()
         return res
