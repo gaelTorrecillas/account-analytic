@@ -96,6 +96,7 @@ class AnalyticTrackingItem(models.Model):
         store=True,
         help="Actual amount incurred above the planned amount limit.",
     )
+    # FIXME: remove as is not used
     remaining_actual_amount = fields.Float(
         compute="_compute_actual_amounts",
         store=True,
