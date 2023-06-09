@@ -354,7 +354,7 @@ class AnalyticTrackingItem(models.Model):
             cost_rules = tracking.product_id.activity_cost_ids
             # Calculate Planned Amount if no ABC an only qty provided
             # or when a ABC tracking (sub)item is created
-            if not tracking.planned_amount and not cost_rules:
+            if not cost_rules:
                 factor = tracking.activity_cost_id.factor or 1.0
                 unit_cost = tracking._get_unit_cost()
                 qty = factor * (tracking.planned_qty or tracking.parent_id.planned_qty)
@@ -379,6 +379,6 @@ class AnalyticTrackingItem(models.Model):
     def write(self, vals):
         res = super().write(vals)
         # Write on planned_qty to update the planned amounts
-        if vals.get("planned_qty"):
+        if "planned_qty" in vals:
             self._populate_abcost_tracking_item()
         return res
