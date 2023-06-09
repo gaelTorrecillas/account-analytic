@@ -75,7 +75,7 @@ class AnalyticTrackingItem(models.Model):
 
     # Actual Amounts
     actual_amount = fields.Float(
-        compute="_compute_actual_amounts",
+        compute="_compute_actual_amount",
         store=True,
         help="Total cost amount of the related Analytic Items. "
         "These Analytic Items are generated when a cost is incurred, "
@@ -125,7 +125,25 @@ class AnalyticTrackingItem(models.Model):
     @api.depends(
         "analytic_line_ids.amount",
         "parent_id.analytic_line_ids.amount",
-        "planned_amount",
+        "state",
+        "child_ids",
+    )
+    def _compute_actual_amount(self):
+        currency = self.env.company.currency_id
+        for item in self:
+            actual = 0.0
+            # Actuals calculated only for leaves, not for parents
+            if item.state != "cancel" and not item.child_ids:
+                actual = currency.round(
+                    -sum(
+                        x.amount_abcost if x.parent_id else x.amount
+                        for x in item.analytic_line_ids
+                    )
+                )
+            item.actual_amount = actual
+
+    @api.depends(
+        "actual_amount",
         "accounted_amount",
         "state",
         "child_ids",
@@ -133,7 +151,6 @@ class AnalyticTrackingItem(models.Model):
     def _compute_actual_amounts(self):
         currency = self.env.company.currency_id
         for item in self:
-            actual = 0.0
             to_post = 0.0
             dif = 0
             wip = 0.0
@@ -144,19 +161,13 @@ class AnalyticTrackingItem(models.Model):
                 planned = currency.round(item.planned_amount)
                 # If planned is zero, wip is zero and variance = -actual
                 # Otherwise there can be problems with unplanned additional work items
-                actual = currency.round(
-                    -sum(
-                        x.amount_abcost if x.parent_id else x.amount
-                        for x in item.analytic_line_ids
-                    )
-                )
+                actual = item.actual_amount
                 to_post = actual - currency.round(item.accounted_amount)
                 wip = min(actual, planned)
                 dif = actual - planned
                 remain = -dif if doing and dif <= 0.0 else 0.0
                 var = dif if not remain else 0.0
 
-            item.actual_amount = actual
             item.pending_amount = to_post
             item.wip_actual_amount = wip
             item.difference_actual_amount = dif
