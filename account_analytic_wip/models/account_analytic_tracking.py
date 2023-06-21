@@ -191,7 +191,7 @@ class AnalyticTrackingItem(models.Model):
         # Note: do not set account_id,
         # as that triggers a (repeated) Analytic Item
         return {
-            "ref": _("%s - WIP") % (self.display_name),
+            "ref": _("%s-WIP-%s") % (self.production_id.name, self.product_id.default_code),
             "product_id": self.product_id.id,
             "product_uom_id": self.product_id.uom_id.id,
             "debit": amount if amount > 0.0 else 0.0,
@@ -269,7 +269,7 @@ class AnalyticTrackingItem(models.Model):
                 self._prepare_account_move_line(acc_wip, amount),
             ]
             je_vals = self._prepare_account_move_head(
-                wip_journal, move_lines, "WIP %s" % (self.display_name)
+                wip_journal, move_lines, "%s-WIP-%s" % (self.production_id.name, self.display_name)
             )
             je_new = self.env["account.move"].sudo().create(je_vals)
             je_new._post()
@@ -311,7 +311,7 @@ class AnalyticTrackingItem(models.Model):
             move_lines, wip_journal = tracked._prepare_clear_wip_journal_entries()
             if move_lines:
                 je_vals = tracked._prepare_account_move_head(
-                    wip_journal, move_lines, "Variance for %s" % (tracked.display_name)
+                    wip_journal, move_lines, "%s-Variance for %s" % (self.production_id.name, tracked.display_name)
                 )
                 je_new = AccountMove.create(je_vals)
                 je_new._post()
