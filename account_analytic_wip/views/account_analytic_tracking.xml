@@ -23,17 +23,17 @@
                     <group>
                         <field name="date" />
                         <field name="parent_id" />
-                        <field name="planned_amount" />
+                        <field name="planned_amount" string="Standard" />
                     </group>
                     <group string="Actuals" name="actuals">
-                        <field name="actual_amount" />
-                        <field name="wip_actual_amount" />
-                        <field name="remaining_actual_amount" />
-                        <field name="variance_actual_amount" />
+                        <field name="actual_amount" string="Actuals" />
+                        <field name="wip_actual_amount" string="WIP" />
+                        <field name="difference_actual_amount" string="Difference" />
+                        <field name="variance_actual_amount" string="Variance" />
                     </group>
                     <group string="Accounted" name="accounted">
-                        <field name="accounted_amount" />
                         <field name="pending_amount" />
+                        <field name="accounted_amount" />
                         <button
                                 name="process_wip_and_variance"
                                 type="object"
@@ -91,16 +91,34 @@
                 <field name="product_id" optional="hide" />
                 <field
                     name="planned_amount"
-                    string="Planned"
+                    string="Standard"
                     optional="show"
-                    sum="Planned"
+                    sum="Standard"
                 />
                 <field name="actual_amount" string="Actual" sum="Actual" />
                 <field
                     name="wip_actual_amount"
                     string="WIP"
-                    optional="show"
+                    optional="hide"
                     sum="WIP"
+                />
+                <field
+                    name="pending_amount"
+                    string="To Post"
+                    optional="hide"
+                    sum="To Post"
+                />
+                <field
+                    name="accounted_amount"
+                    string="Posted"
+                    optional="hide"
+                    sum="Posted"
+                />
+                <field
+                    name="difference_actual_amount"
+                    string="Difference"
+                    optional="hide"
+                    sum="Difference"
                 />
                 <field
                     name="variance_actual_amount"
@@ -108,31 +126,7 @@
                     optional="show"
                     sum="Variance"
                 />
-                <field
-                    name="remaining_actual_amount"
-                    string="Remaining"
-                    optional="show"
-                    sum="Remaining"
-                />
-                <field
-                    name="difference_actual_amount"
-                    string="Difference"
-                    optional="show"
-                    sum="Difference"
-                />
                 <field name="state" />
-                <field
-                    name="accounted_amount"
-                    string="Posted"
-                    optional="show"
-                    sum="Posted"
-                />
-                <field
-                    name="pending_amount"
-                    string="To Post"
-                    optional="show"
-                    sum="To Post"
-                />
             </tree>
         </field>
     </record>
