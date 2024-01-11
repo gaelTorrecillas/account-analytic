@@ -26,7 +26,6 @@
                         <field name="planned_amount" string="Standard" />
                     </group>
                     <group string="Actuals" name="actuals">
-                        <field name="remaining_actual_amount" string="Remaining" />
                         <field name="actual_amount" string="Actuals" />
                         <field name="wip_actual_amount" string="WIP" />
                         <field name="difference_actual_amount" string="Difference" />
@@ -96,35 +95,29 @@
                     optional="show"
                     sum="Standard"
                 />
-                <field
-                    name="remaining_actual_amount"
-                    string="Remaining"
-                    optional="show"
-                    sum="Remaining"
-                />
                 <field name="actual_amount" string="Actual" sum="Actual" />
                 <field
                     name="wip_actual_amount"
                     string="WIP"
-                    optional="show"
+                    optional="hide"
                     sum="WIP"
                 />
                 <field
                     name="pending_amount"
                     string="To Post"
-                    optional="show"
+                    optional="hide"
                     sum="To Post"
                 />
                 <field
                     name="accounted_amount"
                     string="Posted"
-                    optional="show"
+                    optional="hide"
                     sum="Posted"
                 />
                 <field
                     name="difference_actual_amount"
                     string="Difference"
-                    optional="show"
+                    optional="hide"
                     sum="Difference"
                 />
                 <field
