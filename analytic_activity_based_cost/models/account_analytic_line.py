@@ -98,9 +98,9 @@ class AnalyticLine(models.Model):
                 cost_vals = analytic_parent._prepare_activity_cost_data(cost_rule)
                 analytic_parent.with_context(skip_populate_abcost_line=1).copy(cost_vals)
 
-    @api.model
-    def create(self, vals):
-        res = super().create(vals)
-        if not self._context.get('skip_populate_abcost_line'):
+    @api.model_create_multi
+    def create(self, vals_list):
+        res = super().create(vals_list)
+        if not self._context.get("skip_populate_abcost_line"):
             res._populate_abcost_lines()
         return res

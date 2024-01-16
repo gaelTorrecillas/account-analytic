@@ -371,11 +371,12 @@ class AnalyticTrackingItem(models.Model):
                     }
                     tracking.with_context(skip_populate_abcost=1).copy(vals)
 
-    @api.model
-    def create(self, vals):
-        new = super().create(vals)
-        if not self._context.get('skip_populate_abcost'):
-            new._populate_abcost_tracking_item()
+    @api.model_create_multi
+    def create(self, vals_list):
+        new = super().create(vals_list)
+        if not self._context.get("skip_populate_abcost"):
+            for tracking in new:
+                tracking._populate_abcost_tracking_item()
         return new
 
     def write(self, vals):
