@@ -20,12 +20,14 @@ class AnalyticLine(models.Model):
 
     def _get_tracking_item(self):
         self.ensure_one()
-        all_tracking = self.account_id.analytic_tracking_item_ids
         if self.product_id:
-            tracking = all_tracking.search([("product_id", "=", self.product_id.id), ("analytic_id", "=", self.account_id.id)])
+            self._cr.execute('SELECT * from account_analytic_tracking_item where product_id = %s AND analytic_id = %s' % (self.product_id.id,self.account_id.id))
         else:
-            tracking = all_tracking.search([("product_id", "=", False), ("analytic_id", "=", self.account_id.id)])
+            self._cr.execute('SELECT * from account_analytic_tracking_item where product_id = %s AND analytic_id = %s' % (False,self.account_id.id))
+        result = self._cr.fetchall()
+        tracking = self.env['account.analytic.tracking.item'].browse([record[0] for record in result])
         return tracking
+
 
     def _get_set_tracking_item(self):
         """
